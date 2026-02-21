@@ -27,7 +27,14 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;padd
 <h2>Dashboard</h2>
 
 <div id="netWorthCards"></div>
+<div style="display:flex;gap:10px;margin:10px 0">
+<button onclick="setChart('line')">Graph</button>
+<button onclick="setChart('bar')">Bar</button>
+</div>
 
+<div style="overflow-x:auto">
+<canvas id="nwChart" style="min-width:700px"></canvas>
+</div>
 <canvas id="nwChart"></canvas>
 
 <script>
@@ -35,7 +42,13 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;padd
 const API_URL="https://script.google.com/macros/s/AKfycbyVNCzw3JAIqbhIKSCmxPKjwCXZ8cqbxXpFyMctdCm5uwcVfcLoGhDLBFsqEBzTZj87NQ/exec";
 
 const fmt=(n)=> new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n)||0);
+let chartType='line';
+let chartInstance=null;
 
+function setChart(type){
+  chartType=type;
+  loadChart();
+}
 async function loadNetWorth(){
   const res = await fetch(API_URL,{
     method:"POST",
@@ -65,27 +78,36 @@ async function loadNetWorth(){
 }
 
 async function loadChart(){
+
   const snap = await fetch(API_URL,{
     method:"POST",
     body:JSON.stringify({action:"getSnapshots"})
   }).then(r=>r.json());
 
   const labels = snap.months.map(m =>
-    new Date(m).toLocaleDateString('en-IN',{month:'short',year:'numeric'})
+    new Date(m).toLocaleDateString('en-IN',{month:'short',year:'2-digit'})
   );
 
-  const values=snap.netWorth;
+  const values = snap.netWorth;
 
-  new Chart(document.getElementById('nwChart'),{
-    type:'line',
+  if(chartInstance) chartInstance.destroy();
+
+  chartInstance = new Chart(document.getElementById('nwChart'),{
+    type:chartType,
     data:{
       labels,
       datasets:[{
         label:'Net Worth',
         data:values,
+        backgroundColor:'#10b981',
         borderColor:'#38bdf8',
-        tension:0.3
+        tension:0.3,
+        borderRadius:10
       }]
+    },
+    options:{
+      responsive:true,
+      plugins:{legend:{display:true}}
     }
   });
 }
