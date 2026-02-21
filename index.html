@@ -13,105 +13,120 @@
 --primary:#38bdf8;--green:#10b981;--red:#ef4444;--border:rgba(255,255,255,.05);
 }
 body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;padding:20px}
-.net-card{background:var(--card);border-radius:28px;padding:20px;margin:15px 0;border:1px solid var(--border)}
-.net-title{font-size:11px;color:var(--text-dim);font-weight:800}
-.net-worth{font-size:26px;font-weight:800;margin:8px 0}
-.net-row{display:flex;justify-content:space-between;font-size:12px}
-.profit{color:var(--green)}
-.loss{color:var(--red)}
+
+.card{background:var(--card);border-radius:28px;padding:20px;margin:15px 0;border:1px solid var(--border)}
+.title{font-size:11px;color:var(--text-dim);font-weight:800}
+.value{font-size:26px;font-weight:800;margin:8px 0}
+
+.row{display:flex;justify-content:space-between;font-size:12px}
+
+.bar{height:8px;background:var(--border);border-radius:10px;overflow:hidden;margin-top:8px}
+.fill{height:100%;background:var(--green)}
+
+.gauge{
+height:120px;width:120px;border-radius:50%;
+background:conic-gradient(var(--green) 0deg,var(--border) 0deg);
+display:flex;align-items:center;justify-content:center;margin:auto;font-weight:800
+}
+
+.scroll{overflow-x:auto}
+canvas{min-width:700px}
 </style>
 </head>
 
 <body>
 
-<h2>Dashboard</h2>
+<h2>Dashboard Pro</h2>
 
 <div id="netWorthCards"></div>
-<div style="display:flex;gap:10px;margin:10px 0">
-<button onclick="setChart('line')">Graph</button>
-<button onclick="setChart('bar')">Bar</button>
-</div>
 
-<div style="overflow-x:auto">
-<canvas id="nwChart" style="min-width:700px"></canvas>
-</div>
+<div id="creditGauge"></div>
+
+<div id="loanProgress"></div>
+
+<div class="scroll">
 <canvas id="nwChart"></canvas>
+</div>
 
 <script>
 
 const API_URL="https://script.google.com/macros/s/AKfycbyVNCzw3JAIqbhIKSCmxPKjwCXZ8cqbxXpFyMctdCm5uwcVfcLoGhDLBFsqEBzTZj87NQ/exec";
 
-const fmt=(n)=> new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n)||0);
-let chartType='line';
+const fmt=n=> new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n)||0);
+
 let chartInstance=null;
 
-function setChart(type){
-  chartType=type;
-  loadChart();
+/* ⭐ DASHBOARD */
+async function loadDashboard(){
+
+const res = await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"getDashboard"})
+}).then(r=>r.json());
+
+const risk = res.utilization>70?'#ef4444':res.utilization>40?'#f59e0b':'#10b981';
+
+document.getElementById("netWorthCards").innerHTML=`
+<div class="card">
+<div class="title">NET WORTH</div>
+<div class="value">${fmt(res.netWorth)}</div>
+<div class="row">
+<span>Assets: ${fmt(res.assets)}</span>
+<span>Liab: ${fmt(res.liabilities)}</span>
+</div>
+</div>
+`;
+
+document.getElementById("creditGauge").innerHTML=`
+<div class="card">
+<div class="title">CREDIT UTILIZATION</div>
+<div class="gauge" style="background:conic-gradient(${risk} ${res.utilization*3.6}deg,var(--border) 0)">
+${Math.round(res.utilization)}%
+</div>
+</div>
+`;
+
 }
-async function loadNetWorth(){
-  const res = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"getDashboardPlus"})
-  }).then(r=>r.json());
 
-  const diffClass = res.profitLoss>=0?'profit':'loss';
+/* ⭐ LOAN PROGRESS */
+async function loadLoans(){
 
-  document.getElementById("netWorthCards").innerHTML=`
-  <div class="net-card">
-  <div class="net-title">CURRENT NET WORTH</div>
-  <div class="net-worth">${fmt(res.currentNetWorth)}</div>
-  <div class="net-row">
-  <span>Assets: ${fmt(res.assets)}</span>
-  <span>Liabilities: ${fmt(res.liabilities)}</span>
-  </div>
-  <div class="net-row">
-  <span class="${diffClass}">${res.profitLoss>=0?'+':''}${fmt(res.profitLoss)}</span>
-  </div>
-  </div>
+const snap = await fetch(,{
+method:"POST",
+body:JSON.stringify({action:"getDashboard"})
+}).then(r=>r.json());
 
-  <div class="net-card">
-  <div class="net-title">LAST MONTH NET WORTH</div>
-  <div class="net-worth">${fmt(res.lastNetWorth)}</div>
-  </div>
-  `;
+document.getElementById("loanProgress").innerHTML=`
+<div class="card">
+<div class="title">LOAN PROGRESS</div>
+<div class="bar"><div class="fill" style="width:${Math.min(100,snap.utilization)}%"></div></div>
+</div>
+`;
+
 }
 
+/* ⭐ CHART */
 async function loadChart(){
 
-  const snap = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"getSnapshots"})
-  }).then(r=>r.json());
+const snap = await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"getSnapshots"})
+}).then(r=>r.json());
 
-  const labels = snap.months.map(m =>
-    new Date(m).toLocaleDateString('en-IN',{month:'short',year:'2-digit'})
-  );
+const labels = snap.months.map(m=>new Date(m).toLocaleDateString('en-IN',{month:'short',year:'2-digit'}));
+const values = snap.netWorth;
 
-  const values = snap.netWorth;
+if(chartInstance) chartInstance.destroy();
 
-  if(chartInstance) chartInstance.destroy();
+chartInstance = new Chart(document.getElementById('nwChart'),{
+type:'line',
+data:{labels,datasets:[{label:'Net Worth',data:values,borderColor:'#38bdf8',tension:.3}]}
+});
 
-  chartInstance = new Chart(document.getElementById('nwChart'),{
-    type:chartType,
-    data:{
-      labels,
-      datasets:[{
-        label:'Net Worth',
-        data:values,
-        backgroundColor:'#10b981',
-        borderColor:'#38bdf8',
-        tension:0.3,
-        borderRadius:10
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{legend:{display:true}}
-    }
-  });
 }
-loadNetWorth();
+
+loadDashboard();
+loadLoans();
 loadChart();
 
 </script>
