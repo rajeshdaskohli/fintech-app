@@ -3,23 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wealth App</title>
+<title>Dashboard Pro</title>
 
 <style>
-:root{
---bg:#070b14;--card:#121826;--text:#f8fafc;--text-dim:#94a3b8;
---primary:#38bdf8;--green:#10b981;--red:#ef4444;--border:rgba(255,255,255,.05);
+body{
+  margin:0;
+  background:#070b14;
+  color:#fff;
+  font-family:sans-serif;
+  padding:20px;
 }
-body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;padding:20px}
 
-.net-card{background:var(--card);border-radius:28px;padding:20px;margin:15px 0;border:1px solid var(--border)}
-.net-title{font-size:11px;color:var(--text-dim);font-weight:800}
-.net-worth{font-size:26px;font-weight:800;margin:8px 0}
-.net-row{display:flex;justify-content:space-between;font-size:12px}
+.card{
+  background:#121826;
+  border-radius:20px;
+  padding:20px;
+  margin:15px 0;
+}
 
-.scroll{overflow-x:auto}
-canvas{min-width:700px}
-button{padding:8px 12px;border-radius:10px;border:none}
+.scroll{
+  overflow-x:auto;
+}
+
+canvas{
+  width:100%!important;
+  height:260px!important;
+}
+
+button{
+  margin-right:10px;
+  padding:8px 12px;
+}
 </style>
 </head>
 
@@ -28,116 +42,96 @@ button{padding:8px 12px;border-radius:10px;border:none}
 <h2>Dashboard Pro</h2>
 
 <div id="netWorthCards"></div>
-<div id="alertsBox"></div>
-
-<div style="display:flex;gap:10px;margin:10px 0">
-<button onclick="setChart('line')">Graph</button>
-<button onclick="setChart('bar')">Bar</button>
-</div>
 
 <div class="scroll">
-<canvas id="nwChart"></canvas>
+  <button onclick="setChart('line')">Graph</button>
+  <button onclick="setChart('bar')">Bar</button>
+  <canvas id="nwChart"></canvas>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 
-const API_URL="https://script.google.com/macros/s/AKfycbzHM706UvlpAi8rgH1Z4Z68UnsTIrhHr9vyUtrJVCY8TNN9jHBpXoat_HffhMCPatfVeQ/exec";
+/* ⭐ API URL डालो */
+const API_URL="https://script.google.com/macros/s/AKfycbwX9cxYnRC9vpnekymU4mqxt5U0D2i5QKy7ln7dopOXcWoCENZ_PJ0psv9KMayQih5d5g/exec";
 
-const fmt=(n)=> new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n)||0);
+/* ⭐ formatter */
+const fmt=n=>new Intl.NumberFormat('en-IN',{
+  style:'currency',
+  currency:'INR'
+}).format(Number(n)||0);
 
+/* ⭐ chart engine */
 let chartType='line';
 let chartInstance=null;
 
-/* ⭐ NET WORTH */
-async function loadNetWorth(){
-const res=await fetch(API_URL,{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({action:"getDashboardPlus"})
-}).then(r=>r.json());
-
-const diffClass=res.profitLoss>=0?'#10b981':'#ef4444';
-
-document.getElementById("netWorthCards").innerHTML=`
-<div class="net-card">
-<div class="net-title">NET WORTH</div>
-<div class="net-worth">${fmt(res.currentNetWorth)}</div>
-<div class="net-row">
-<span>Assets: ${fmt(res.assets)}</span>
-<span>Liab: ${fmt(res.liabilities)}</span>
-</div>
-<div class="net-row">
-<span style="color:${diffClass}">
-${res.profitLoss>=0?'+':''}${fmt(res.profitLoss)}
-</span>
-</div>
-</div>`;
-}
-
-/* ⭐ ALERTS */
-async function loadAlerts(){
-const res=await fetch(API_URL,{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({action:"getDashboard"})
-}).then(r=>r.json());
-
-let html="";
-if(res.utilization>70) html+=`<div class="net-card">⚠ High credit utilization</div>`;
-if(res.netWorth<0) html+=`<div class="net-card">⚠ Net worth negative</div>`;
-
-document.getElementById("alertsBox").innerHTML=html;
-}
-
-/* ⭐ CHART */
-async function loadChart(){
-
-const snap=await fetch(API_URL,{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({action:"getSnapshots"})
-}).then(r=>r.json());
-
-const labels=snap.months;
-const values=snap.netWorth;
-
-if(chartInstance) chartInstance.destroy();
-
-chartInstance=new Chart(document.getElementById('nwChart'),{
-type:chartType,
-data:{
-labels,
-datasets:[{
-label:'Net Worth',
-data:values,
-borderColor:'#38bdf8',
-backgroundColor:chartType==='bar'
-?values.map(v=>v>=0?'#10b981':'#ef4444')
-:'rgba(56,189,248,0.4)',
-tension:0.3,
-borderRadius:10
-}]
-},
-options:{
-responsive:true,
-plugins:{legend:{display:true}}
-}
-});
-}
-
-/* ⭐ TOGGLE */
 function setChart(type){
-chartType=type;
-loadChart();
+  chartType=type;
+  loadChart();
 }
 
-/* ⭐ LOAD ALL */
+/* ⭐ dashboard cards */
+async function loadNetWorth(){
+  try{
+    const res=await fetch(API_URL,{
+      method:"POST",
+      body:JSON.stringify({action:"getDashboardPlus"})
+    }).then(r=>r.json());
+
+    document.getElementById("netWorthCards").innerHTML=`
+      <div class="card">
+        <h3>NET WORTH</h3>
+        <h2>${fmt(res.currentNetWorth)}</h2>
+        Assets: ${fmt(res.assets)}<br>
+        Liabilities: ${fmt(res.liabilities)}<br>
+        ${fmt(res.profitLoss)}
+      </div>`;
+  }catch(e){
+    console.log(e);
+  }
+}
+
+/* ⭐ chart loader */
+async function loadChart(){
+  if(typeof Chart==="undefined") return;
+
+  try{
+    const snap=await fetch(API_URL,{
+      method:"POST",
+      body:JSON.stringify({action:"getSnapshots"})
+    }).then(r=>r.json());
+
+    if(chartInstance) chartInstance.destroy();
+
+    chartInstance=new Chart(document.getElementById('nwChart'),{
+      type:chartType,
+      data:{
+        labels:snap.months,
+        datasets:[{
+          label:'Net Worth',
+          data:snap.netWorth,
+          borderColor:'#38bdf8',
+          backgroundColor:'#38bdf8',
+          tension:0.3
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false
+      }
+    });
+  }catch(e){
+    console.log(e);
+  }
+}
+
+/* ⭐ safe loader */
 window.addEventListener("DOMContentLoaded",()=>{
-loadNetWorth();
-loadAlerts();
-loadChart();
+  setTimeout(()=>{
+    loadNetWorth();
+    loadChart();
+  },300);
 });
 
 </script>
