@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Pro</title>
+<title>Wealth App</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -13,7 +13,7 @@ margin:0;
 background:#070b14;
 color:#fff;
 font-family:sans-serif;
-padding:20px;
+padding:20px
 }
 
 /* cards */
@@ -25,8 +25,8 @@ margin:15px 0;
 box-shadow:0 8px 20px rgba(0,0,0,.3)
 }
 
-/* credit progress */
-.credit-wrap{
+/* credit card style */
+.credit{
 background:#e7eef5;
 color:#000;
 border-radius:22px;
@@ -34,11 +34,19 @@ padding:20px;
 margin:15px 0
 }
 
+.row{
+display:flex;
+justify-content:space-between;
+align-items:center
+}
+
+/* progress */
 .bar-bg{
 height:10px;
-background:#d4d4d4;
+background:#cfcfcf;
 border-radius:20px;
-margin:15px 0
+margin:14px 0;
+overflow:hidden
 }
 
 .bar{
@@ -47,15 +55,7 @@ background:#0d9488;
 border-radius:20px
 }
 
-.pay-btn{
-background:linear-gradient(45deg,#7c3aed,#d946ef);
-border:none;
-color:#fff;
-padding:8px 14px;
-border-radius:12px;
-margin-top:10px
-}
-
+/* badge */
 .badge{
 padding:3px 10px;
 border-radius:10px;
@@ -64,6 +64,16 @@ font-size:12px
 
 .paid{background:#10b981}
 .unpaid{background:#ef4444}
+
+/* pay button */
+.pay{
+background:linear-gradient(45deg,#7c3aed,#d946ef);
+border:none;
+color:#fff;
+padding:8px 14px;
+border-radius:12px;
+margin-top:10px
+}
 
 canvas{
 width:100%!important;
@@ -76,7 +86,7 @@ height:250px!important
 
 <h2>Dashboard</h2>
 
-<div id="netWorth"></div>
+<div id="net"></div>
 <div id="credit"></div>
 <div id="bills"></div>
 
@@ -87,43 +97,39 @@ height:250px!important
 
 <script>
 
-/* ⭐ API URL डालो */
-const API_URL="https://script.google.com/macros/s/AKfycbz36nSCy2AZw7Hsu3D-8irGuFwNsop1vhANiefLeFNNPwp58szIBnfvKBcFWzrBn4s-VA/exec";
+const API_URL="https://script.google.com/macros/s/AKfycbxolGIytcBnLOb1GSyJGey0fjlOqXrRNV54N4UYJ-t1FOJBhY3A19y0T3Nl2vgrBFP8tg/exec";
 
-/* ⭐ formatter */
+/* formatter */
 const fmt=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n)||0);
 
-/* ⭐ NET WORTH */
+/* NET WORTH */
 async function loadNet(){
-const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getDashboardPlus"})}).then(r=>r.json());
+const r=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getDashboardPlus"})}).then(r=>r.json());
 
-document.getElementById("netWorth").innerHTML=`
+document.getElementById("net").innerHTML=`
 <div class="card">
 <h3>NET WORTH</h3>
-<h2>${fmt(res.currentNetWorth)}</h2>
-Assets: ${fmt(res.assets)}<br>
-Liabilities: ${fmt(res.liabilities)}
+<h2>${fmt(r.currentNetWorth)}</h2>
+Assets: ${fmt(r.assets)}<br>
+Liabilities: ${fmt(r.liabilities)}
 </div>`;
 }
 
-/* ⭐ CREDIT */
+/* CREDIT */
 async function loadCredit(){
-const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getDashboard"})}).then(r=>r.json());
+const r=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getDashboard"})}).then(r=>r.json());
 
-const used=res.cardLiab;
-const limit=res.cardLimit;
+const used=r.cardLiab;
+const limit=r.cardLimit;
 const avail=limit-used;
 const per=(used/limit)*100;
 
 document.getElementById("credit").innerHTML=`
-<div class="credit-wrap">
-<div style="display:flex;justify-content:space-between">
-<div>
-Used<br><b>${fmt(used)}</b>
-</div>
-<div>
-Available<br><b>${fmt(avail)}</b>
-</div>
+<div class="credit">
+
+<div class="row">
+<div>Used<br><b>${fmt(used)}</b></div>
+<div>Available<br><b>${fmt(avail)}</b></div>
 </div>
 
 <div class="bar-bg">
@@ -131,34 +137,35 @@ Available<br><b>${fmt(avail)}</b>
 </div>
 
 <center>Total Credit Limit: ${fmt(limit)}</center>
+
 </div>`;
 }
 
-/* ⭐ BILLS */
+/* BILLS */
 async function loadBills(){
 
 await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"generateBills"})});
 
-const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getBills"})}).then(r=>r.json());
+const r=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getBills"})}).then(r=>r.json());
 
 let html="";
 
-res.bills.forEach(b=>{
+r.bills.forEach(b=>{
 const due=new Date(b.dueDate);
-const diff=Math.ceil((due-new Date())/(1000*60*60*24));
 
 html+=`
 <div class="card">
 <b>${b.card}</b>
-<div style="display:flex;justify-content:space-between">
+
+<div class="row">
 <div>
 Bill<br>${fmt(b.amount)}<br>
-Due date<br>${due.toLocaleDateString()}
+Due<br>${due.toLocaleDateString()}
 </div>
 
 <div>
 <span class="badge ${b.status}">${b.status}</span>
-${b.status!=="paid"?`<br><button class="pay-btn" onclick="payBill('${b.id}',${b.amount})">PAY</button>`:""}
+${b.status!=="paid"?`<br><button class="pay" onclick="payBill('${b.id}',${b.amount})">PAY</button>`:""}
 </div>
 </div>
 </div>`;
@@ -172,7 +179,7 @@ await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"payBill",billId:
 loadBills();
 }
 
-/* ⭐ BAR CHART */
+/* BAR */
 async function loadBar(){
 const snap=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getSnapshots"})}).then(r=>r.json());
 
@@ -180,16 +187,13 @@ new Chart(document.getElementById('bar'),{
 type:'bar',
 data:{
 labels:snap.months,
-datasets:[{
-label:'Net Worth',
-data:snap.netWorth,
-backgroundColor:'#22c55e'
-}]
-}
+datasets:[{data:snap.netWorth,backgroundColor:'#22c55e'}]
+},
+options:{plugins:{legend:{display:false}}}
 });
 }
 
-/* ⭐ loader */
+/* LOAD */
 window.onload=()=>{
 loadNet();
 loadCredit();
