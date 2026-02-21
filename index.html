@@ -70,7 +70,10 @@ async function loadChart(){
     body:JSON.stringify({action:"getSnapshots"})
   }).then(r=>r.json());
 
-  const labels=snap.months;
+  const labels = snap.months.map(m =>
+    new Date(m).toLocaleDateString('en-IN',{month:'short',year:'numeric'})
+  );
+
   const values=snap.netWorth;
 
   new Chart(document.getElementById('nwChart'),{
@@ -86,7 +89,6 @@ async function loadChart(){
     }
   });
 }
-
 loadNetWorth();
 loadChart();
 
