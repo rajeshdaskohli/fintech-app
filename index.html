@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wealth App</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
 :root{
 --bg:#070b14;--card:#121826;--text:#f8fafc;--text-dim:#94a3b8;
@@ -14,28 +12,14 @@
 }
 body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;padding:20px}
 
-.card{background:var(--card);border-radius:28px;padding:20px;margin:15px 0;border:1px solid var(--border)}
-.title{font-size:11px;color:var(--text-dim);font-weight:800}
-.value{font-size:26px;font-weight:800;margin:8px 0}
+.net-card{background:var(--card);border-radius:28px;padding:20px;margin:15px 0;border:1px solid var(--border)}
+.net-title{font-size:11px;color:var(--text-dim);font-weight:800}
+.net-worth{font-size:26px;font-weight:800;margin:8px 0}
+.net-row{display:flex;justify-content:space-between;font-size:12px}
 
-.row{display:flex;justify-content:space-between;font-size:12px}
-
-.bar{height:8px;background:var(--border);border-radius:10px;overflow:hidden;margin-top:8px}
-.fill{height:100%;background:var(--green)}
-
-.gauge{
-height:120px;width:120px;border-radius:50%;
-background:conic-gradient(var(--green) 0deg,var(--border) 0deg);
-display:flex;align-items:center;justify-content:center;margin:auto;font-weight:800
-}
-
-.scroll{
-overflow-x:auto;
-}
-
-canvas{
-min-width:700px;
-}
+.scroll{overflow-x:auto}
+canvas{min-width:700px}
+button{padding:8px 12px;border-radius:10px;border:none}
 </style>
 </head>
 
@@ -55,6 +39,8 @@ min-width:700px;
 <canvas id="nwChart"></canvas>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 
 const API_URL="https://script.google.com/macros/s/AKfycbzHM706UvlpAi8rgH1Z4Z68UnsTIrhHr9vyUtrJVCY8TNN9jHBpXoat_HffhMCPatfVeQ/exec";
@@ -64,7 +50,7 @@ const fmt=(n)=> new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'})
 let chartType='line';
 let chartInstance=null;
 
-/* ⭐ LOAD NET WORTH */
+/* ⭐ NET WORTH */
 async function loadNetWorth(){
 const res=await fetch(API_URL,{
 method:"POST",
@@ -72,7 +58,7 @@ headers:{'Content-Type':'application/json'},
 body:JSON.stringify({action:"getDashboardPlus"})
 }).then(r=>r.json());
 
-const diffClass=res.profitLoss>=0?'profit':'loss';
+const diffClass=res.profitLoss>=0?'#10b981':'#ef4444';
 
 document.getElementById("netWorthCards").innerHTML=`
 <div class="net-card">
@@ -83,7 +69,7 @@ document.getElementById("netWorthCards").innerHTML=`
 <span>Liab: ${fmt(res.liabilities)}</span>
 </div>
 <div class="net-row">
-<span class="${diffClass}">
+<span style="color:${diffClass}">
 ${res.profitLoss>=0?'+':''}${fmt(res.profitLoss)}
 </span>
 </div>
@@ -99,7 +85,6 @@ body:JSON.stringify({action:"getDashboard"})
 }).then(r=>r.json());
 
 let html="";
-
 if(res.utilization>70) html+=`<div class="net-card">⚠ High credit utilization</div>`;
 if(res.netWorth<0) html+=`<div class="net-card">⚠ Net worth negative</div>`;
 
@@ -128,9 +113,16 @@ datasets:[{
 label:'Net Worth',
 data:values,
 borderColor:'#38bdf8',
-backgroundColor:'rgba(56,189,248,0.4)',
-tension:0.3
+backgroundColor:chartType==='bar'
+?values.map(v=>v>=0?'#10b981':'#ef4444')
+:'rgba(56,189,248,0.4)',
+tension:0.3,
+borderRadius:10
 }]
+},
+options:{
+responsive:true,
+plugins:{legend:{display:true}}
 }
 });
 }
@@ -141,70 +133,12 @@ chartType=type;
 loadChart();
 }
 
-/* ⭐ PARALLEL LOAD (ULTRA FAST) */
-Promise.all([
-loadNetWorth(),
-loadAlerts(),
-loadChart()
-]);
-
-const snap = await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"getSnapshots"})
-}).then(r=>r.json());
-
-const labels=snap.months.map(m=>new Date(m).toLocaleDateString('en-IN',{month:'short',year:'2-digit'}));
-const values=snap.netWorth;
-
-/* ⭐ FORECAST */
-const last=values[values.length-1]||0;
-const forecast=[...values,last*1.05,last*1.1];
-
-if(chartInstance) chartInstance.destroy();
-
-chartInstance=new Chart(document.getElementById('nwChart'),{
-type:chartType,
-data:{
-labels:[...labels,'F1','F2'],
-datasets:[
-{
-label:'Net Worth',
-data:values,
-borderColor:'#38bdf8',
-backgroundColor:chartType==='bar'
-?values.map(v=>v>=0?'#10b981':'#ef4444')
-:'#10b981',
-tension:.3,
-borderRadius:10
-},
-{
-label:'Forecast',
-data:forecast,
-borderColor:'#f59e0b',
-borderDash:[5,5],
-tension:.3
-},
-{
-label:'Target',
-data:new Array(labels.length+2).fill(targetValue),
-borderColor:'#ef4444',
-borderDash:[2,2]
-}
-]
-},
-options:{
-responsive:true,
-plugins:{legend:{display:true}}
-}
-});
-
-}
-
-window.onload=()=>{
+/* ⭐ LOAD ALL */
+window.addEventListener("DOMContentLoaded",()=>{
 loadNetWorth();
 loadAlerts();
 loadChart();
-};
+});
 
 </script>
 
