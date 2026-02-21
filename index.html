@@ -189,8 +189,6 @@ async function loadCredit(){
   </div>`;
 }
 
-  },300);
-});
 async function loadBills(){
 
   await fetch(API_URL,{
@@ -263,6 +261,8 @@ window.addEventListener("DOMContentLoaded",()=>{
     loadChart();
     loadCredit();
     loadBills();
+  },300);
+});
     
 </script>
 
