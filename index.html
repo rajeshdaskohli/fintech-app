@@ -91,7 +91,7 @@ ${Math.round(res.utilization)}%
 /* ⭐ LOAN PROGRESS */
 async function loadLoans(){
 
-const snap = await fetch(,{
+const snap = await fetch(API_URL,{
 method:"POST",
 body:JSON.stringify({action:"getDashboard"})
 }).then(r=>r.json());
