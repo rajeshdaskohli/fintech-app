@@ -45,6 +45,11 @@ canvas{min-width:700px}
 <div id="loanProgress"></div>
 
 <div class="scroll">
+  
+  <div style="display:flex;gap:10px;margin:10px 0">
+<button onclick="setChart('line')">Graph</button>
+<button onclick="setChart('bar')">Bar</button>
+</div>
 <canvas id="nwChart"></canvas>
 </div>
 
@@ -55,57 +60,36 @@ const API_URL="https://script.google.com/macros/s/AKfycbyVNCzw3JAIqbhIKSCmxPKjwC
 const fmt=n=> new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n)||0);
 
 let chartInstance=null;
+let chartType='line';
+let targetValue=200000; // ⭐ wealth goal
+
+function setChart(type){
+  chartType=type;
+  loadChart();
+}
 
 /* ⭐ DASHBOARD */
 async function loadDashboard(){
-
 const res = await fetch(API_URL,{
 method:"POST",
-body:JSON.stringify({action:"getDashboard"})
+body:JSON.stringify({action:"getDashboardPlus"})
 }).then(r=>r.json());
 
-const risk = res.utilization>70?'#ef4444':res.utilization>40?'#f59e0b':'#10b981';
+const trend=res.profitLoss>=0?'↑':'↓';
 
 document.getElementById("netWorthCards").innerHTML=`
 <div class="card">
 <div class="title">NET WORTH</div>
-<div class="value">${fmt(res.netWorth)}</div>
+<div class="value">${fmt(res.currentNetWorth)} ${trend}</div>
 <div class="row">
 <span>Assets: ${fmt(res.assets)}</span>
 <span>Liab: ${fmt(res.liabilities)}</span>
 </div>
 </div>
 `;
-
-document.getElementById("creditGauge").innerHTML=`
-<div class="card">
-<div class="title">CREDIT UTILIZATION</div>
-<div class="gauge" style="background:conic-gradient(${risk} ${res.utilization*3.6}deg,var(--border) 0)">
-${Math.round(res.utilization)}%
-</div>
-</div>
-`;
-
 }
 
-/* ⭐ LOAN PROGRESS */
-async function loadLoans(){
-
-const snap = await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"getDashboard"})
-}).then(r=>r.json());
-
-document.getElementById("loanProgress").innerHTML=`
-<div class="card">
-<div class="title">LOAN PROGRESS</div>
-<div class="bar"><div class="fill" style="width:${Math.min(100,snap.utilization)}%"></div></div>
-</div>
-`;
-
-}
-
-/* ⭐ CHART */
+/* ⭐ ANALYTICS CHART */
 async function loadChart(){
 
 const snap = await fetch(API_URL,{
@@ -113,20 +97,54 @@ method:"POST",
 body:JSON.stringify({action:"getSnapshots"})
 }).then(r=>r.json());
 
-const labels = snap.months.map(m=>new Date(m).toLocaleDateString('en-IN',{month:'short',year:'2-digit'}));
-const values = snap.netWorth;
+const labels=snap.months.map(m=>new Date(m).toLocaleDateString('en-IN',{month:'short',year:'2-digit'}));
+const values=snap.netWorth;
+
+/* ⭐ FORECAST */
+const last=values[values.length-1]||0;
+const forecast=[...values,last*1.05,last*1.1];
 
 if(chartInstance) chartInstance.destroy();
 
-chartInstance = new Chart(document.getElementById('nwChart'),{
-type:'line',
-data:{labels,datasets:[{label:'Net Worth',data:values,borderColor:'#38bdf8',tension:.3}]}
+chartInstance=new Chart(document.getElementById('nwChart'),{
+type:chartType,
+data:{
+labels:[...labels,'F1','F2'],
+datasets:[
+{
+label:'Net Worth',
+data:values,
+borderColor:'#38bdf8',
+backgroundColor:chartType==='bar'
+?values.map(v=>v>=0?'#10b981':'#ef4444')
+:'#10b981',
+tension:.3,
+borderRadius:10
+},
+{
+label:'Forecast',
+data:forecast,
+borderColor:'#f59e0b',
+borderDash:[5,5],
+tension:.3
+},
+{
+label:'Target',
+data:new Array(labels.length+2).fill(targetValue),
+borderColor:'#ef4444',
+borderDash:[2,2]
+}
+]
+},
+options:{
+responsive:true,
+plugins:{legend:{display:true}}
+}
 });
 
 }
 
 loadDashboard();
-loadLoans();
 loadChart();
 
 </script>
