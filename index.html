@@ -5,45 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wealth App</title>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 :root{
 --bg:#070b14;--card:#121826;--text:#f8fafc;--text-dim:#94a3b8;
 --primary:#38bdf8;--green:#10b981;--red:#ef4444;--border:rgba(255,255,255,.05);
 }
-body{
-margin:0;
-background:var(--bg);
-color:var(--text);
-font-family:sans-serif;
-padding:20px
-}
-
-.net-card{
-background:var(--card);
-border-radius:28px;
-padding:20px;
-margin:15px 0;
-border:1px solid var(--border);
-}
-
-.net-title{
-font-size:11px;
-color:var(--text-dim);
-font-weight:800;
-}
-
-.net-worth{
-font-size:26px;
-font-weight:800;
-margin:8px 0;
-}
-
-.net-row{
-display:flex;
-justify-content:space-between;
-font-size:12px;
-}
-
+body{margin:0;background:var(--bg);color:var(--text);font-family:sans-serif;padding:20px}
+.net-card{background:var(--card);border-radius:28px;padding:20px;margin:15px 0;border:1px solid var(--border)}
+.net-title{font-size:11px;color:var(--text-dim);font-weight:800}
+.net-worth{font-size:26px;font-weight:800;margin:8px 0}
+.net-row{display:flex;justify-content:space-between;font-size:12px}
 .profit{color:var(--green)}
 .loss{color:var(--red)}
 </style>
@@ -53,8 +26,9 @@ font-size:12px;
 
 <h2>Dashboard</h2>
 
-<!-- ⭐ Net worth cards container -->
 <div id="netWorthCards"></div>
+
+<canvas id="nwChart"></canvas>
 
 <script>
 
@@ -90,7 +64,31 @@ async function loadNetWorth(){
   `;
 }
 
+async function loadChart(){
+  const snap = await fetch(API_URL,{
+    method:"POST",
+    body:JSON.stringify({action:"getSnapshots"})
+  }).then(r=>r.json());
+
+  const labels=snap.months;
+  const values=snap.netWorth;
+
+  new Chart(document.getElementById('nwChart'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Net Worth',
+        data:values,
+        borderColor:'#38bdf8',
+        tension:0.3
+      }]
+    }
+  });
+}
+
 loadNetWorth();
+loadChart();
 
 </script>
 
