@@ -16,31 +16,51 @@ font-family:sans-serif;
 padding:18px
 }
 
+/* glass card */
 .card{
-background:#121826;
-border-radius:22px;
-padding:18px;
-margin:14px 0
+background:linear-gradient(145deg,#121826,#0e1420);
+border-radius:24px;
+padding:20px;
+margin:16px 0;
+box-shadow:0 10px 30px rgba(0,0,0,.4)
 }
 
+/* bill card */
 .bill{
-background:#121826;
-border-radius:22px;
-padding:18px;
-margin:14px 0;
-border:1px solid rgba(255,255,255,.05)
+background:linear-gradient(145deg,#121826,#0e1420);
+border-radius:24px;
+padding:20px;
+margin:16px 0;
+box-shadow:0 10px 30px rgba(0,0,0,.4)
 }
 
+/* row */
 .row{
 display:flex;
 justify-content:space-between;
 font-size:14px;
-margin-top:6px
+margin-top:7px
 }
 
+/* progress */
+.progress{
+height:8px;
+border-radius:10px;
+background:#222;
+margin-top:12px;
+overflow:hidden
+}
+
+.progress span{
+display:block;
+height:100%;
+background:#10b981
+}
+
+/* badge */
 .badge{
-padding:3px 9px;
-border-radius:12px;
+padding:4px 10px;
+border-radius:14px;
 font-size:11px
 }
 
@@ -48,17 +68,23 @@ font-size:11px
 .unpaid{background:#f59e0b}
 .overdue{background:#ef4444}
 
+/* pay button */
 .pay{
-margin-top:10px;
-padding:7px 12px;
+margin-top:14px;
+padding:9px 16px;
 border:none;
-border-radius:12px;
-background:#38bdf8;
+border-radius:14px;
+background:linear-gradient(135deg,#7c3aed,#38bdf8);
+color:#fff;
 font-weight:700
 }
 
-canvas{
-height:260px!important
+/* bar card */
+.bar-card{
+background:#0f1d17;
+border-radius:24px;
+padding:20px;
+margin:16px 0
 }
 </style>
 </head>
@@ -142,15 +168,23 @@ let badge="unpaid";
 if(b.status==="paid") badge="paid";
 if(b.overdue) badge="overdue";
 
+const percent=Math.min((b.amount/100000)*100,100);
+
 html+=`
 <div class="bill">
 <b>${b.card}</b>
 
 <div class="row"><span>Bill</span><span>${fmt(b.amount)}</span></div>
-<div class="row"><span>Due date</span><span>${due.toLocaleDateString()}</span></div>
-<div class="row"><span>Status</span><span class="badge ${badge}">${b.status}</span></div>
+<div class="row"><span>Due</span><span>${diff>0?diff+" days":"Overdue"}</span></div>
 
-${b.status!=="paid"?`<button class="pay" onclick="pay('${b.id}',${b.amount})">Pay</button>`:""}
+<div class="progress"><span style="width:${percent}%"></span></div>
+
+<div class="row">
+<span>Status</span>
+<span class="badge ${badge}">${b.status}</span>
+</div>
+
+${b.status!=="paid"?`<button class="pay" onclick="pay('${b.id}',${b.amount})">Pay Now</button>`:""}
 </div>`;
 });
 
@@ -177,9 +211,15 @@ new Chart(document.getElementById("bar"),{
 type:"bar",
 data:{
 labels:r.months,
-datasets:[{data:r.netWorth,backgroundColor:"#10b981"}]
+datasets:[{
+data:r.netWorth,
+backgroundColor:"#2f855a"
+}]
 },
-options:{plugins:{legend:{display:false}}}
+options:{
+plugins:{legend:{display:false}},
+scales:{x:{grid:{display:false}},y:{grid:{color:"#1a2"}}}
+}
 });
 }
 
