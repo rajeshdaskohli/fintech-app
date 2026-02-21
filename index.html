@@ -3,267 +3,194 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard Pro</title>
+<title>Wealth App</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
 body{
-  margin:0;
-  background:#070b14;
-  color:#fff;
-  font-family:sans-serif;
-  padding:20px;
+margin:0;
+background:#070b14;
+color:#fff;
+font-family:sans-serif;
+padding:18px
 }
 
 .card{
-  background:#121826;
-  border-radius:20px;
-  padding:20px;
-  margin:15px 0;
-}
-
-.scroll{
-  overflow-x:auto;
-}
-
-canvas{
-  width:100%!important;
-  height:260px!important;
-}
-
-button{
-  margin-right:10px;
-  padding:8px 12px;
-}
-  .bill-card{
 background:#121826;
-border-radius:20px;
-padding:15px;
-margin:12px 0;
+border-radius:22px;
+padding:18px;
+margin:14px 0
+}
+
+.bill{
+background:#121826;
+border-radius:22px;
+padding:18px;
+margin:14px 0;
 border:1px solid rgba(255,255,255,.05)
 }
 
-.bill-row{
+.row{
 display:flex;
 justify-content:space-between;
-font-size:13px;
-margin-top:5px
+font-size:14px;
+margin-top:6px
 }
 
 .badge{
-padding:3px 8px;
-border-radius:10px;
+padding:3px 9px;
+border-radius:12px;
 font-size:11px
 }
 
-.badge-paid{background:#10b981}
-.badge-unpaid{background:#ef4444}
-.badge-overdue{background:#f59e0b}
+.paid{background:#10b981}
+.unpaid{background:#f59e0b}
+.overdue{background:#ef4444}
 
-.pay-btn{
+.pay{
 margin-top:10px;
-padding:6px 10px;
+padding:7px 12px;
 border:none;
-border-radius:10px;
+border-radius:12px;
 background:#38bdf8;
-color:#000;
-font-weight:600
+font-weight:700
+}
+
+canvas{
+height:260px!important
 }
 </style>
 </head>
 
 <body>
 
-<h2>Dashboard Pro</h2>
+<h2>Dashboard</h2>
 
-<div id="netWorthCards"></div>
-<div id="billSection"></div>
-<div id="creditSummary"></div>
+<div id="netWorth"></div>
+<div id="credit"></div>
+<div id="bills"></div>
 
-<div class="scroll">
-  <canvas id="creditChart"></canvas>
+<div class="card">
+<h3>Growth</h3>
+<canvas id="bar"></canvas>
 </div>
-<div class="scroll">
-  <button onclick="setChart('line')">Graph</button>
-  <button onclick="setChart('bar')">Bar</button>
-  <canvas id="nwChart"></canvas>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 
-/* ⭐ API URL डालो */
-const API_URL="https://script.google.com/macros/s/AKfycbwxGSfdB6Ng1Ya-2fxTFKwBYiWWbM5usDVkWr1MCP7dJX7JRSJfGaBu-vfTFmT5-XUe/exec";
+const API_URL="https://script.google.com/macros/s/AKfycbwIp-46Qpj-8hsGOccLLzUok6nFffhHLU1quDlIe4c5lC3GPq3MuKTTbbvokrAbZOisTw/exec";
 
-/* ⭐ formatter */
+/* formatter */
 const fmt=n=>new Intl.NumberFormat('en-IN',{
-  style:'currency',
-  currency:'INR'
+style:'currency',currency:'INR'
 }).format(Number(n)||0);
 
-/* ⭐ chart engine */
-let chartType='line';
-let chartInstance=null;
-
-function setChart(type){
-  chartType=type;
-  loadChart();
-}
-
-/* ⭐ dashboard cards */
+/* NET WORTH */
 async function loadNetWorth(){
-  try{
-    const res=await fetch(API_URL,{
-      method:"POST",
-      body:JSON.stringify({action:"getDashboardPlus"})
-    }).then(r=>r.json());
+const r=await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"getDashboardPlus"})
+}).then(r=>r.json());
 
-    document.getElementById("netWorthCards").innerHTML=`
-      <div class="card">
-        <h3>NET WORTH</h3>
-        <h2>${fmt(res.currentNetWorth)}</h2>
-        Assets: ${fmt(res.assets)}<br>
-        Liabilities: ${fmt(res.liabilities)}<br>
-        ${fmt(res.profitLoss)}
-      </div>`;
-  }catch(e){
-    console.log(e);
-  }
+document.getElementById("netWorth").innerHTML=`
+<div class="card">
+<h3>NET WORTH</h3>
+<h2>${fmt(r.currentNetWorth)}</h2>
+Assets: ${fmt(r.assets)}<br>
+Liabilities: ${fmt(r.liabilities)}
+</div>`;
 }
 
-/* ⭐ chart loader */
-async function loadChart(){
-  if(typeof Chart==="undefined") return;
-
-  try{
-    const snap=await fetch(API_URL,{
-      method:"POST",
-      body:JSON.stringify({action:"getSnapshots"})
-    }).then(r=>r.json());
-
-    if(chartInstance) chartInstance.destroy();
-
-    chartInstance=new Chart(document.getElementById('nwChart'),{
-      type:chartType,
-      data:{
-        labels:snap.months,
-        datasets:[{
-          label:'Net Worth',
-          data:snap.netWorth,
-          borderColor:'#38bdf8',
-          backgroundColor:'#38bdf8',
-          tension:0.3
-        }]
-      },
-      options:{
-        responsive:true,
-        maintainAspectRatio:false
-      }
-    });
-  }catch(e){
-    console.log(e);
-  }
-}
+/* CREDIT */
 async function loadCredit(){
-  const res = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"getDashboard"})
-  }).then(r=>r.json());
+const r=await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"getDashboard"})
+}).then(r=>r.json());
 
-  const used = res.cardLiab || 0;
-  const limit = res.cardLimit || 0;
-  const avail = limit-used;
-  const util = res.utilization || 0;
+const used=r.cardLiab||0;
+const limit=r.cardLimit||0;
+const avail=limit-used;
 
-  document.getElementById("creditSummary").innerHTML=`
-  <div class="net-card">
-    <div class="net-title">CREDIT DASHBOARD</div>
-    <div class="net-row">
-      <span>Limit: ${fmt(limit)}</span>
-      <span>Used: ${fmt(used)}</span>
-    </div>
-    <div class="net-row">
-      <span>Available: ${fmt(avail)}</span>
-      <span>${util.toFixed(1)}%</span>
-    </div>
-  </div>`;
+document.getElementById("credit").innerHTML=`
+<div class="card">
+<h3>CREDIT</h3>
+<div class="row"><span>Used</span><span>${fmt(used)}</span></div>
+<div class="row"><span>Available</span><span>${fmt(avail)}</span></div>
+<div class="row"><span>Limit</span><span>${fmt(limit)}</span></div>
+</div>`;
 }
 
+/* BILLS */
 async function loadBills(){
 
-  await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"generateBills"})
-  });
+await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"generateBills"})});
 
-  const res = await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"getBills"})
-  }).then(r=>r.json());
+const r=await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"getBills"})
+}).then(r=>r.json());
 
-  let html="";
+let html="";
 
-  res.bills.forEach(b=>{
+r.bills.forEach(b=>{
 
-    const due = new Date(b.dueDate);
-    const today = new Date();
-    const diff = Math.ceil((due-today)/(1000*60*60*24));
+const due=new Date(b.dueDate);
+const diff=Math.ceil((due-new Date())/(1000*60*60*24));
 
-    let badge="badge-unpaid";
-    if(b.status==="paid") badge="badge-paid";
-    if(b.overdue) badge="badge-overdue";
+let badge="unpaid";
+if(b.status==="paid") badge="paid";
+if(b.overdue) badge="overdue";
 
-    html+=`
-    <div class="bill-card">
-      <b>${b.card}</b>
+html+=`
+<div class="bill">
+<b>${b.card}</b>
 
-      <div class="bill-row">
-        <span>Bill</span>
-        <span>${fmt(b.amount)}</span>
-      </div>
+<div class="row"><span>Bill</span><span>${fmt(b.amount)}</span></div>
+<div class="row"><span>Due date</span><span>${due.toLocaleDateString()}</span></div>
+<div class="row"><span>Status</span><span class="badge ${badge}">${b.status}</span></div>
 
-      <div class="bill-row">
-        <span>Min due</span>
-        <span>${fmt(b.minDue)}</span>
-      </div>
-
-      <div class="bill-row">
-        <span>Due</span>
-        <span>${diff>0?diff+" days": "Overdue"}</span>
-      </div>
-
-      <div class="bill-row">
-        <span>Status</span>
-        <span class="badge ${badge}">${b.status}</span>
-      </div>
-
-      ${b.status!=="paid"?
-        `<button class="pay-btn" onclick="payBill('${b.id}',${b.amount})">Pay</button>`:""}
-    </div>`;
-  });
-
-  document.getElementById("billSection").innerHTML=html;
-}
-
-async function payBill(id,amt){
-
-  await fetch(API_URL,{
-    method:"POST",
-    body:JSON.stringify({action:"payBill",billId:id,amount:amt})
-  });
-
-  loadBills();
-}
-  /* ⭐ safe loader */
-window.addEventListener("DOMContentLoaded",()=>{
-  setTimeout(()=>{
-    loadNetWorth();
-    loadChart();
-    loadCredit();
-    loadBills();
-  },300);
+${b.status!=="paid"?`<button class="pay" onclick="pay('${b.id}',${b.amount})">Pay</button>`:""}
+</div>`;
 });
-    
+
+document.getElementById("bills").innerHTML=html;
+}
+
+/* PAY */
+async function pay(id,amt){
+await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"payBill",billId:id,amount:amt})
+});
+loadBills();
+}
+
+/* BAR GROWTH */
+async function loadBar(){
+const r=await fetch(API_URL,{
+method:"POST",
+body:JSON.stringify({action:"getSnapshots"})
+}).then(r=>r.json());
+
+new Chart(document.getElementById("bar"),{
+type:"bar",
+data:{
+labels:r.months,
+datasets:[{data:r.netWorth,backgroundColor:"#10b981"}]
+},
+options:{plugins:{legend:{display:false}}}
+});
+}
+
+/* LOAD */
+window.onload=()=>{
+loadNetWorth();
+loadCredit();
+loadBills();
+loadBar();
+}
+
 </script>
 
 </body>
