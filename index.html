@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Wealth App</title>
+<title>Dashboard Pro</title>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -13,78 +13,61 @@ margin:0;
 background:#070b14;
 color:#fff;
 font-family:sans-serif;
-padding:18px
+padding:20px;
 }
 
-/* glass card */
+/* cards */
 .card{
-background:linear-gradient(145deg,#121826,#0e1420);
-border-radius:24px;
+background:#121826;
+border-radius:22px;
 padding:20px;
-margin:16px 0;
-box-shadow:0 10px 30px rgba(0,0,0,.4)
+margin:15px 0;
+box-shadow:0 8px 20px rgba(0,0,0,.3)
 }
 
-/* bill card */
-.bill{
-background:linear-gradient(145deg,#121826,#0e1420);
-border-radius:24px;
+/* credit progress */
+.credit-wrap{
+background:#e7eef5;
+color:#000;
+border-radius:22px;
 padding:20px;
-margin:16px 0;
-box-shadow:0 10px 30px rgba(0,0,0,.4)
+margin:15px 0
 }
 
-/* row */
-.row{
-display:flex;
-justify-content:space-between;
-font-size:14px;
-margin-top:7px
+.bar-bg{
+height:10px;
+background:#d4d4d4;
+border-radius:20px;
+margin:15px 0
 }
 
-/* progress */
-.progress{
-height:8px;
-border-radius:10px;
-background:#222;
-margin-top:12px;
-overflow:hidden
+.bar{
+height:10px;
+background:#0d9488;
+border-radius:20px
 }
 
-.progress span{
-display:block;
-height:100%;
-background:#10b981
+.pay-btn{
+background:linear-gradient(45deg,#7c3aed,#d946ef);
+border:none;
+color:#fff;
+padding:8px 14px;
+border-radius:12px;
+margin-top:10px
 }
 
-/* badge */
 .badge{
-padding:4px 10px;
-border-radius:14px;
-font-size:11px
+padding:3px 10px;
+border-radius:10px;
+font-size:12px
 }
 
 .paid{background:#10b981}
-.unpaid{background:#f59e0b}
-.overdue{background:#ef4444}
+.unpaid{background:#ef4444}
 
-/* pay button */
-.pay{
-margin-top:14px;
-padding:9px 16px;
-border:none;
-border-radius:14px;
-background:linear-gradient(135deg,#7c3aed,#38bdf8);
-color:#fff;
-font-weight:700
-}
-
-/* bar card */
-.bar-card{
-background:#0f1d17;
-border-radius:24px;
-padding:20px;
-margin:16px 0
+canvas{
+width:100%!important;
+height:250px!important
 }
 </style>
 </head>
@@ -104,128 +87,111 @@ margin:16px 0
 
 <script>
 
-const API_URL="https://script.google.com/macros/s/AKfycbwIp-46Qpj-8hsGOccLLzUok6nFffhHLU1quDlIe4c5lC3GPq3MuKTTbbvokrAbZOisTw/exec";
+/* ⭐ API URL डालो */
+const API_URL="https://script.google.com/macros/s/AKfycbz36nSCy2AZw7Hsu3D-8irGuFwNsop1vhANiefLeFNNPwp58szIBnfvKBcFWzrBn4s-VA/exec";
 
-/* formatter */
-const fmt=n=>new Intl.NumberFormat('en-IN',{
-style:'currency',currency:'INR'
-}).format(Number(n)||0);
+/* ⭐ formatter */
+const fmt=n=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR'}).format(Number(n)||0);
 
-/* NET WORTH */
-async function loadNetWorth(){
-const r=await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"getDashboardPlus"})
-}).then(r=>r.json());
+/* ⭐ NET WORTH */
+async function loadNet(){
+const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getDashboardPlus"})}).then(r=>r.json());
 
 document.getElementById("netWorth").innerHTML=`
 <div class="card">
 <h3>NET WORTH</h3>
-<h2>${fmt(r.currentNetWorth)}</h2>
-Assets: ${fmt(r.assets)}<br>
-Liabilities: ${fmt(r.liabilities)}
+<h2>${fmt(res.currentNetWorth)}</h2>
+Assets: ${fmt(res.assets)}<br>
+Liabilities: ${fmt(res.liabilities)}
 </div>`;
 }
 
-/* CREDIT */
+/* ⭐ CREDIT */
 async function loadCredit(){
-const r=await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"getDashboard"})
-}).then(r=>r.json());
+const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getDashboard"})}).then(r=>r.json());
 
-const used=r.cardLiab||0;
-const limit=r.cardLimit||0;
+const used=res.cardLiab;
+const limit=res.cardLimit;
 const avail=limit-used;
+const per=(used/limit)*100;
 
 document.getElementById("credit").innerHTML=`
-<div class="card">
-<h3>CREDIT</h3>
-<div class="row"><span>Used</span><span>${fmt(used)}</span></div>
-<div class="row"><span>Available</span><span>${fmt(avail)}</span></div>
-<div class="row"><span>Limit</span><span>${fmt(limit)}</span></div>
+<div class="credit-wrap">
+<div style="display:flex;justify-content:space-between">
+<div>
+Used<br><b>${fmt(used)}</b>
+</div>
+<div>
+Available<br><b>${fmt(avail)}</b>
+</div>
+</div>
+
+<div class="bar-bg">
+<div class="bar" style="width:${per}%"></div>
+</div>
+
+<center>Total Credit Limit: ${fmt(limit)}</center>
 </div>`;
 }
 
-/* BILLS */
+/* ⭐ BILLS */
 async function loadBills(){
 
 await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"generateBills"})});
 
-const r=await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"getBills"})
-}).then(r=>r.json());
+const res=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getBills"})}).then(r=>r.json());
 
 let html="";
 
-r.bills.forEach(b=>{
-
+res.bills.forEach(b=>{
 const due=new Date(b.dueDate);
 const diff=Math.ceil((due-new Date())/(1000*60*60*24));
 
-let badge="unpaid";
-if(b.status==="paid") badge="paid";
-if(b.overdue) badge="overdue";
-
-const percent=Math.min((b.amount/100000)*100,100);
-
 html+=`
-<div class="bill">
+<div class="card">
 <b>${b.card}</b>
-
-<div class="row"><span>Bill</span><span>${fmt(b.amount)}</span></div>
-<div class="row"><span>Due</span><span>${diff>0?diff+" days":"Overdue"}</span></div>
-
-<div class="progress"><span style="width:${percent}%"></span></div>
-
-<div class="row">
-<span>Status</span>
-<span class="badge ${badge}">${b.status}</span>
+<div style="display:flex;justify-content:space-between">
+<div>
+Bill<br>${fmt(b.amount)}<br>
+Due date<br>${due.toLocaleDateString()}
 </div>
 
-${b.status!=="paid"?`<button class="pay" onclick="pay('${b.id}',${b.amount})">Pay Now</button>`:""}
+<div>
+<span class="badge ${b.status}">${b.status}</span>
+${b.status!=="paid"?`<br><button class="pay-btn" onclick="payBill('${b.id}',${b.amount})">PAY</button>`:""}
+</div>
+</div>
 </div>`;
 });
 
 document.getElementById("bills").innerHTML=html;
 }
 
-/* PAY */
-async function pay(id,amt){
-await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"payBill",billId:id,amount:amt})
-});
+async function payBill(id,amt){
+await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"payBill",billId:id,amount:amt})});
 loadBills();
 }
 
-/* BAR GROWTH */
+/* ⭐ BAR CHART */
 async function loadBar(){
-const r=await fetch(API_URL,{
-method:"POST",
-body:JSON.stringify({action:"getSnapshots"})
-}).then(r=>r.json());
+const snap=await fetch(API_URL,{method:"POST",body:JSON.stringify({action:"getSnapshots"})}).then(r=>r.json());
 
-new Chart(document.getElementById("bar"),{
-type:"bar",
+new Chart(document.getElementById('bar'),{
+type:'bar',
 data:{
-labels:r.months,
+labels:snap.months,
 datasets:[{
-data:r.netWorth,
-backgroundColor:"#2f855a"
+label:'Net Worth',
+data:snap.netWorth,
+backgroundColor:'#22c55e'
 }]
-},
-options:{
-plugins:{legend:{display:false}},
-scales:{x:{grid:{display:false}},y:{grid:{color:"#1a2"}}}
 }
 });
 }
 
-/* LOAD */
+/* ⭐ loader */
 window.onload=()=>{
-loadNetWorth();
+loadNet();
 loadCredit();
 loadBills();
 loadBar();
